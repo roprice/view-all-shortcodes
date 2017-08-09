@@ -76,7 +76,7 @@ class Available_Shortcodes_Listing
 	        }
 	    ?>
 
-			</table>
+			
 			</div>
 		</div>
 		<?php
