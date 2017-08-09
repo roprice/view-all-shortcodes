@@ -57,6 +57,7 @@ class Available_Shortcodes_Listing
 			    display: block;
 			    float: left;
 			    margin: 10px 20px;
+				cursor:pointer;
 			}
 		</style>
 		
@@ -64,14 +65,15 @@ class Available_Shortcodes_Listing
         	<div id="icon-options-general" class="icon32"><br></div>
 			<h1>Listing of shortcodes on this site</h1>
 			<div class="section panel">
-				<p>This page lists shortcodes available for you to use on this WordPress installation. Copy and paste any shortcode (including brackets) into a post, page, widget, template, etc., to see what it does! </p>
+				<p>This page lists all the shortcode available to you. Click to copy<span id="clipboard-message"></span>.</p>
+
 				
         	<h2>Shortcodes</h2>
         <?php
 	        foreach($shortcode_tags as $code => $function)
 	        {
 	        	?>
-	        		 <code>[<?php echo $code; ?>]</code> 
+	        		 <code title="Click to automatically copy to your clipboard." data-clipboard-text="[<?php echo $code; ?>]">[<?php echo $code; ?>]</code> 
 	        	<?php
 	        }
 	    ?>
@@ -79,6 +81,30 @@ class Available_Shortcodes_Listing
 			
 			</div>
 		</div>
+		
+		
+	    <!-- 2. Include library -->
+		<script src="https://cdn.jsdelivr.net/npm/clipboard@1/dist/clipboard.min.js"></script>
+		<!-- <style href="http://cdn.jsdelivr.net/g/primer"></style> -->
+    
+
+	    <!-- 3. Instantiate clipboard by passing a list of HTML elements -->
+	    <script>
+	    var btns = document.querySelectorAll('code');
+	    var clipboard = new Clipboard(btns);
+
+	    clipboard.on('success', function(e) {
+	        console.log(e);
+			document.getElementById("clipboard-message").innerHTML = '';
+			document.getElementById("clipboard-message").innerHTML += "-- shortcode copied!";			
+	    });
+
+	    clipboard.on('error', function(e) {
+	        console.log(e);
+	    });
+	    </script>
+		
+		
 		<?php
 	}
 } // END class Available_Shortcodes_Listing
