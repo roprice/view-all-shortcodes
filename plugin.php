@@ -3,7 +3,7 @@
  * Plugin Name:       All the Shortcodes
  * Description:       Lists every shortcode registered on the site under Settings → View all shortcodes.
  * Version:           2.0.0
- * Author:            Rowan Price & Associates
+ * Author:            Rowan
  * Author URI:        https://www.rowanprice.com
  * Text Domain:       view-all-shortcodes
  * License:           GPL-2.0-or-later
