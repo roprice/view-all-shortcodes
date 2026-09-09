@@ -1,0 +1,18 @@
+.view-all-shortcodes-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 16px 0;
+}
+
+.view-all-shortcodes-list li {
+	margin: 0;
+}
+
+.view-all-shortcodes-copy {
+	min-height: 34px;
+}
+
+.view-all-shortcodes-copy code {
+	font-size: 13px;
+}

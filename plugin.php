@@ -1,111 +1,131 @@
 <?php
-
 /**
- * Plugin Name: All the Shortcodes
- * Plugin URI: 
- * Description: Creates an admin page (<a href="/wp-admin/options-general.php?page=view-all-shortcodes">Settings -> View all shortcodes</a>) that lets you view all shortcodes on your site. No configuration necessary.
- * Version: 1.4
- * Author: Rowan Price & Associates
- * Author URI: https://www.rowanprice.com
- * Text Domain: view-all-shortcodes
- * License:     GPL
-*/
-if(is_admin())
-{
-	// Create the function
-	$shortcodes = new Available_Shortcodes_Listing();
+ * Plugin Name:       All the Shortcodes
+ * Description:       Lists every shortcode registered on the site under Settings → View all shortcodes.
+ * Version:           2.0.0
+ * Author:            Rowan Price & Associates
+ * Author URI:        https://www.rowanprice.com
+ * Text Domain:       view-all-shortcodes
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+ * Requires at least: 6.0
+ * Requires PHP:      7.4
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
-/**
- * View all available shorttcodes on an admin page
- *
- * @author
- **/
-class Available_Shortcodes_Listing
-{
-	public function __construct()
-	{
-		$this->Admin();
-	}
+
+final class View_All_Shortcodes {
+	private const PAGE_SLUG = 'view-all-shortcodes';
+
 	/**
-	 * Create the admin area
+	 * The hook suffix returned when the settings page is registered.
+	 *
+	 * @var string
 	 */
-	public function Admin(){
-		add_action( 'admin_menu', array(&$this,'Admin_Menu') );
-	}
+	private $page_hook = '';
+
 	/**
-	 * Function for the admin menu to create a menu item in the settings tree
+	 * Register WordPress hooks.
 	 */
-	public function Admin_Menu(){
-		add_submenu_page(
-			'options-general.php',
-			'View all shortcodes',
-			'View all shortcodes',
+	public function init() {
+		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+	}
+
+	/**
+	 * Add the plugin page to the Settings menu.
+	 */
+	public function register_settings_page() {
+		$this->page_hook = add_options_page(
+			__( 'View all shortcodes', 'view-all-shortcodes' ),
+			__( 'View all shortcodes', 'view-all-shortcodes' ),
 			'manage_options',
-			'view-all-shortcodes',
-			array(&$this,'Display_Admin_Page'));
+			self::PAGE_SLUG,
+			array( $this, 'render_settings_page' )
+		);
 	}
+
 	/**
-	 * Display the admin page
+	 * Load assets only on this plugin's settings page.
+	 *
+	 * @param string $hook_suffix The current admin page hook suffix.
 	 */
-	public function Display_Admin_Page(){
+	public function enqueue_assets( $hook_suffix ) {
+		if ( $this->page_hook !== $hook_suffix ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'view-all-shortcodes-admin',
+			plugins_url( 'assets/css/admin.css', __FILE__ ),
+			array(),
+			'2.0.0'
+		);
+
+		wp_enqueue_script(
+			'view-all-shortcodes-admin',
+			plugins_url( 'assets/js/admin.js', __FILE__ ),
+			array(),
+			'2.0.0',
+			true
+		);
+	}
+
+	/**
+	 * Render the settings page.
+	 */
+	public function render_settings_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		global $shortcode_tags;
-        ?>
-		
-		<style>
-			code {
-				padding: 5px 10px;
-			    display: block;
-			    float: left;
-			    margin: 10px 20px;
-				cursor:pointer;
-			}
-		</style>
-		
-        <div class="wrap">
-        	<div id="icon-options-general" class="icon32"><br></div>
-			<h1>Listing of shortcodes on this site</h1>
-			<div class="section panel">
-				<p>This page lists all the shortcode available to you. Click to copy<span id="clipboard-message"></span>.</p>
 
-				
-        	<h2>Shortcodes</h2>
-        <?php
-	        foreach($shortcode_tags as $code => $function)
-	        {
-	        	?>
-	        		 <code title="Click to automatically copy to your clipboard." data-clipboard-text="[<?php echo $code; ?>]">[<?php echo $code; ?>]</code> 
-	        	<?php
-	        }
-	    ?>
+		$shortcodes = is_array( $shortcode_tags ) ? array_keys( $shortcode_tags ) : array();
+	natcasesort( $shortcodes );
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Listing of shortcodes on this site', 'view-all-shortcodes' ); ?></h1>
+			<p><?php esc_html_e( 'Select a shortcode to copy it to your clipboard.', 'view-all-shortcodes' ); ?></p>
+			<p id="view-all-shortcodes-status" class="screen-reader-text" aria-live="polite"></p>
 
-			
-			</div>
+			<?php if ( empty( $shortcodes ) ) : ?>
+				<div class="notice notice-info inline">
+					<p><?php esc_html_e( 'No shortcodes are currently registered on this site.', 'view-all-shortcodes' ); ?></p>
+				</div>
+			<?php else : ?>
+				<h2><?php esc_html_e( 'Shortcodes', 'view-all-shortcodes' ); ?></h2>
+				<ul class="view-all-shortcodes-list">
+					<?php foreach ( $shortcodes as $shortcode ) : ?>
+						<?php
+						$shortcode_text = sprintf( '[%s]', $shortcode );
+						$copy_label     = sprintf(
+							/* translators: %s: shortcode text. */
+							__( 'Copy %s', 'view-all-shortcodes' ),
+							$shortcode_text
+						);
+						?>
+						<li>
+							<button
+								type="button"
+								class="button button-secondary view-all-shortcodes-copy"
+								data-shortcode="<?php echo esc_attr( $shortcode_text ); ?>"
+								data-success-message="<?php echo esc_attr( sprintf( __( '%s copied to clipboard.', 'view-all-shortcodes' ), $shortcode_text ) ); ?>"
+								data-error-message="<?php esc_attr_e( 'Your browser could not copy the shortcode. Please copy it manually.', 'view-all-shortcodes' ); ?>"
+								aria-label="<?php echo esc_attr( $copy_label ); ?>"
+							>
+								<code><?php echo esc_html( $shortcode_text ); ?></code>
+							</button>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
 		</div>
-		
-		
-	    <!-- 2. Include library -->
-		<script src="https://cdn.jsdelivr.net/npm/clipboard@1/dist/clipboard.min.js"></script>
-		<!-- <style href="http://cdn.jsdelivr.net/g/primer"></style> -->
-    
-
-	    <!-- 3. Instantiate clipboard by passing a list of HTML elements -->
-	    <script>
-	    var btns = document.querySelectorAll('code');
-	    var clipboard = new Clipboard(btns);
-
-	    clipboard.on('success', function(e) {
-	        console.log(e);
-			document.getElementById("clipboard-message").innerHTML = '';
-			document.getElementById("clipboard-message").innerHTML += "-- shortcode copied!";			
-	    });
-
-	    clipboard.on('error', function(e) {
-	        console.log(e);
-	    });
-	    </script>
-		
-		
 		<?php
 	}
-} // END class Available_Shortcodes_Listing
-?>
+}
+
+$view_all_shortcodes = new View_All_Shortcodes();
+$view_all_shortcodes->init();
